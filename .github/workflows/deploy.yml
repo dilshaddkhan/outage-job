@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main   # Trigger workflow on push to main branch
+      - DocumentDB-branch  # Trigger workflow on push to DocumentDB-branch
   workflow_dispatch: # Allows manual triggering of the workflow from the GitHub Actions UI
 
 
