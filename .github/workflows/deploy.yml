@@ -3,11 +3,11 @@ name: Build and Push to AWS ECR
 on:
   push:
     branches:
-      - main # Runs automatically whenever you push code to main branch
+      - main
 
 jobs:
-  build-and-push:
-    name: Build Docker Image & Push to ECR
+  build-and-deploy:
+    name: Build Docker Image, Push to ECR, and Update ECS
     runs-on: ubuntu-latest  # Runs natively on x86_64 / amd64 architecture
 
     steps:
@@ -31,6 +31,24 @@ jobs:
           ECR_REPOSITORY: outage-job
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          # 1. Build native amd64 container
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          
+          # 2. Push using unique Commit SHA tag (Works with Tag Immutability)
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Register New ECS Task Definition Revision
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: outage-job
+          IMAGE_TAG: ${{ github.sha }}
+          TASK_DEFINITION_NAME: outage-job-task
+        run: |
+          # 1. Fetch current task definition JSON
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION_NAME)
+          
+          # 2. Replace container image URI with newly pushed SHA image and sanitize JSON metadata
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+          
+          # 3. Register the new active task definition revision in ECS
+          aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
