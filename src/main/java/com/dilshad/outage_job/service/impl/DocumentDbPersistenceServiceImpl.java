@@ -19,7 +19,7 @@ public class DocumentDbPersistenceServiceImpl implements OutagePersistenceServic
         try {
             OutageDocument document = OutageDocument.builder()
                     .outageId(outageId)
-                    .description("Processed via Spring Boot Job")
+                    .description("Outage due to Network failure")
                     .status(status)
                     .build();
            // repository.save(document);

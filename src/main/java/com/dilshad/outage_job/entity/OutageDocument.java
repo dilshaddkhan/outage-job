@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 //@Document(collection = "outage_records")
-@Data                       // Generates Getters, Setters, toString, equals, and hashCode
-@NoArgsConstructor          // Required by Spring Data / MongoDB mapping to instantiate objects
-@AllArgsConstructor         // Generates constructor for all fields
-@Builder                    // (Optional) Enables Builder pattern for clean object creation
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OutageDocument {
 
   //  @Id
